@@ -8,6 +8,7 @@ let verificationCodes = {};
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
+// Login route
 router.post("/admin", (req, res) => {
   const { email, password } = req.body;
   const admin = admins.find((admin) => admin.email === email && admin.password === password);
@@ -17,26 +18,22 @@ router.post("/admin", (req, res) => {
     verificationCodes[email] = verificationCode;
     sendVerificationEmail(email, verificationCode);
     res.json({ success: true, message: "Verification code sent" });
-
-    const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, { expiresIn: "1h" });
-    res.json({ success: true, token, message: "Verification code sent" });
   } else {
     res.status(401).json({ success: false, message: "Invalid credentials" });
   }
 });
 
-router.post("/admin/verify", (req, res) => {
+// Verification route 
+router.post("/verify", (req, res) => {
   const { email, verificationCode } = req.body;
-
   if (verificationCodes[email] === verificationCode) {
-    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "1h" });
-    delete verificationCodes[email];
+    delete verificationCodes[email]; // Clear the code once used
+    const token = jwt.sign({ email, role: "admin" }, JWT_SECRET, { expiresIn: "1h" });
     res.json({ success: true, token });
   } else {
     res.status(401).json({ success: false, message: "Invalid verification code." });
   }
 });
-
 const sendVerificationEmail = (email, verificationCode) => {
   const transporter = nodemailer.createTransport({
     service: "gmail",
